@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedCondition;
 
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -29,7 +31,6 @@ public class StepDefenation {
 		driver.manage().window().maximize();
 		driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
 		driver.get("https://developer.here.com/documentation");
-
 	}
 
 	@When("^verify loading of documentaion page$")
@@ -41,7 +42,6 @@ public class StepDefenation {
 		} else {
 			System.out.println("Page Title Not Matched");
 		}
-
 	}
 
 	@Then("^verify status code$")
@@ -58,6 +58,17 @@ public class StepDefenation {
 		} else {
 			System.out.println("Invalid URls");
 		}
+
+	}
+
+	@Then("^Verify Angular JS initialization in documentation page$")
+	public void verify_Angular_JS_initialization_in_documentation_page() {
+		if (angularHasFinishedProcessing()) {
+			System.out.println("Angular JS should be initialized");
+		} else {
+			System.out.println("Angular JS should NOT be initialized");
+		}
+
 	}
 
 	@Then("^verify all internal links$")
@@ -92,6 +103,26 @@ public class StepDefenation {
 		while (itr.hasNext()) {
 			System.out.println(itr.next());
 		}
+	}
+
+	public static boolean angularHasFinishedProcessing() {
+		return new ExpectedCondition<Boolean>() {
+			public Boolean apply(WebDriver driver) {
+				String hasAngularFinishedScript = "var callback = arguments[arguments.length - 1];\n"
+						+ "var el = document.querySelector('html');\n" + "if (!window.angular) {\n"
+						+ "    callback('false')\n" + "}\n" + "if (angular.getTestability) {\n"
+						+ "    angular.getTestability(el).whenStable(function(){callback('true')});\n" + "} else {\n"
+						+ "    if (!angular.element(el).injector()) {\n" + "        callback('false')\n" + "    }\n"
+						+ "    var browser = angular.element(el).injector().get('$browser');\n"
+						+ "    browser.notifyWhenNoOutstandingRequests(function(){callback('true')});\n" + "}";
+
+				JavascriptExecutor javascriptExecutor = (JavascriptExecutor) driver;
+				String isProcessingFinished = javascriptExecutor.executeAsyncScript(hasAngularFinishedScript)
+						.toString();
+
+				return Boolean.valueOf(isProcessingFinished);
+			}
+		} != null;
 	}
 
 }
